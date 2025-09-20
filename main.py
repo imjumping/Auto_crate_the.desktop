@@ -1,14 +1,15 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Text, Toplevel
 import os
 import sys
+import shutil  # 用于检测命令是否存在
+
 
 def create_desktop_launcher():
     # 创建主窗口
     root = tk.Tk()
     root.title("创建 .desktop 启动器")
     root.geometry("650x580")
-    root.resizable(False, False)
 
     # 设置样式
     style = ttk.Style()
@@ -71,7 +72,7 @@ def create_desktop_launcher():
     # 提示信息
     tip_label = ttk.Label(
         main_frame,
-        text="💡 桌面：直接可见图标\n应用菜单：在启动器/应用程序列表中显示（需重启或刷新）",
+        text="💡 桌面：直接可见图标\n应用菜单：在启动器/应用程序列表中显示（需刷新）",
         foreground="#666",
         font=("Arial", 9)
     )
@@ -142,11 +143,57 @@ Categories=Utility;
 
             if target == "desktop":
                 msg = f".desktop 文件已生成至桌面：\n{filepath}\n\n双击即可运行。"
+                messagebox.showinfo("成功", msg)
+                root.quit()
             else:
-                msg = f".desktop 文件已生成至应用菜单：\n{filepath}\n\n请重启应用菜单或运行：\nupdate-desktop-database ~/.local/share/applications"
+                refresh_cmd = "update-desktop-database ~/.local/share/applications"
 
-            messagebox.showinfo("成功", msg)
-            root.quit()  # 关闭窗口
+                # 检测命令是否存在
+                has_cmd = shutil.which("update-desktop-database") is not None
+
+                if has_cmd:
+                    tip_text = "✅ 检测到 update-desktop-database 已安装，运行以下命令可立即刷新菜单："
+                else:
+                    tip_text = (
+                        "⚠️ 未检测到 update-desktop-database，请先安装：\n"
+                        "  Ubuntu/Debian:   sudo apt install desktop-file-utils\n"
+                        "  Fedora/RHEL:     sudo dnf install desktop-file-utils\n"
+                        "  Arch/Manjaro:    sudo pacman -S desktop-file-utils\n"
+                        "安装后运行以下命令刷新菜单："
+                    )
+
+                # 创建轻量弹窗，聚焦“复制刷新命令”
+                cmd_win = Toplevel(root)
+                cmd_win.title("操作提示")
+                cmd_win.geometry("650x320")
+                cmd_win.resizable(False, False)
+
+                msg = f".desktop 文件已生成至应用菜单：\n{filepath}"
+                ttk.Label(cmd_win, text=msg, font=("Arial", 10), justify="left").pack(padx=20, pady=(15,5))
+                ttk.Label(cmd_win, text=tip_text, font=("Arial", 9), foreground="#555", justify="left").pack(padx=20, pady=(5,5))
+
+                # 命令显示框
+                cmd_entry = ttk.Entry(cmd_win, font=("Courier", 10), width=75)
+                cmd_entry.insert(0, refresh_cmd)
+                cmd_entry.config(state="readonly")  # 不可编辑但可复制
+                cmd_entry.pack(padx=20, pady=5)
+
+                # 复制按钮
+                def copy_cmd():
+                    cmd_win.clipboard_clear()
+                    cmd_win.clipboard_append(refresh_cmd)
+                    messagebox.showinfo("复制成功", "命令已复制到剪贴板！", parent=cmd_win)
+
+                copy_btn = ttk.Button(cmd_win, text="📋 复制命令", command=copy_cmd)
+                copy_btn.pack(pady=10)
+
+                # 关闭按钮
+                close_btn = ttk.Button(cmd_win, text="关闭", command=lambda: [cmd_win.destroy(), root.quit()])
+                close_btn.pack(pady=5)
+
+                cmd_win.transient(root)
+                cmd_win.grab_set()
+                root.wait_window(cmd_win)
 
         except Exception as e:
             messagebox.showerror("错误", f"写入文件失败：{e}")
