@@ -1,8 +1,7 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, Text, Toplevel
+from tkinter import ttk, filedialog, messagebox, Toplevel
 import os
-import sys
-import shutil  # 用于检测命令是否存在
+import shutil
 
 
 def create_desktop_launcher():
@@ -91,18 +90,21 @@ def create_desktop_launcher():
             messagebox.showerror("错误", "应用名称不能为空！")
             return
 
+        # 处理 Exec
         if exec_choice == "file":
-            if not exec_value or not os.path.exists(exec_value):
-                messagebox.showerror("错误", "请选择有效的可执行文件！")
+            if not exec_value:
+                messagebox.showerror("错误", "请选择或输入可执行路径！")
                 return
+            # 不再检查文件是否存在，直接使用路径
             exec_value = os.path.abspath(exec_value)
         elif exec_choice == "cmd":
             if not exec_value:
                 messagebox.showerror("错误", "请输入命令！")
                 return
 
+        # 图标：即使不存在也继续，只警告
         if icon_value and not os.path.exists(icon_value):
-            messagebox.showwarning("警告", "图标文件不存在，将使用默认图标")
+            messagebox.showwarning("警告", "图标文件不存在，将使用默认图标（仍会生成 .desktop 文件）")
 
         # 确定目标目录
         if target == "desktop":
@@ -175,7 +177,7 @@ Categories=Utility;
                 # 命令显示框
                 cmd_entry = ttk.Entry(cmd_win, font=("Courier", 10), width=75)
                 cmd_entry.insert(0, refresh_cmd)
-                cmd_entry.config(state="readonly")  # 不可编辑但可复制
+                cmd_entry.config(state="readonly")
                 cmd_entry.pack(padx=20, pady=5)
 
                 # 复制按钮
@@ -240,7 +242,7 @@ Categories=Utility;
             browse_btn.config(state='disabled')
 
     # 初始化状态
-    toggle_exec_input(True)  # 默认选择“选择可执行文件”
+    toggle_exec_input(True)
 
     # 运行主循环
     root.mainloop()
