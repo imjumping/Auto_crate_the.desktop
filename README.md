@@ -10,13 +10,10 @@
 mkdir build && cd build
 cmake ..
 make
-./DesktopLauncher
 ```
 
 >依赖
 
 >>Qt6 (Core, Gui, Widgets)
 
->>CMake >= 3.16
-
->>C++17 支持
+>>CMake
